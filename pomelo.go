@@ -60,12 +60,10 @@ func (s *Server) Init() {
 		)
 		return nil
 	}
-
 	app.Run(os.Args)
 }
 
 func (s *Server) ServeHTTP(c http.ResponseWriter, req *http.Request) {
-	//s.Process(c, req)
 	s.r.Run(req.URL.Path, c, req)
 }
 
