@@ -1,36 +1,41 @@
 package main
 
 import (
-	"fmt"
 	"github.com/widaT/pomelo"
-	"net/http"
-	"time"
+	"github.com/widaT/pomelo/middleware"
 )
 
-func hello(wr http.ResponseWriter, r *http.Request) {
-	timeStart := time.Now()
-	wr.Write([]byte("hello"))
-	timeElapsed := time.Since(timeStart)
-	fmt.Println(timeElapsed)
+func hello(c *pomelo.Context) {
+	c.JSON(struct {
+		A int    `json:"a"`
+		B string `json:"b"`
+	}{
+		A: 1233,
+		B: "eeee",
+	})
+
 }
 
-func timeMiddleware(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(wr http.ResponseWriter, r *http.Request) {
-		timeStart := time.Now()
+func timeMiddleware(next pomelo.Handler) pomelo.Handler {
+	return pomelo.HandlerFunc(func(ctx *pomelo.Context) {
+		//timeStart := time.Now()
+		if ctx.ParamGet("name") == "h" {
+			ctx.STR("aaaa")
+			return
+		}
 
-		// next handler
-		next.ServeHTTP(wr, r)
-
-		timeElapsed := time.Since(timeStart)
+		next.Serve(ctx)
+		//timeElapsed := time.Since(timeStart)
 		//logger.Println(timeElapsed)
-		fmt.Println(timeElapsed)
+		//fmt.Println(timeElapsed)
 	})
 }
 
 func main() {
 	s := pomelo.NewServer()
 	s.Init()
+	s.Use(middleware.AccessLog)
 	s.Use(timeMiddleware)
-	s.Add("/", http.HandlerFunc(hello))
+	s.Add("/", pomelo.HandlerFunc(hello))
 	s.Run()
 }

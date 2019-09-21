@@ -1,20 +1,19 @@
 package pomelo
 
 type Config struct {
-	EnableGizp bool
-	Address    string
+	EnableGizp     bool
+	Address        string
+	ParseMultiForm bool //是否预先解析 MultipartForm
 
-	LogLevel int
-	LogPath  string
+	LogPath string
 }
 
 type Option func(config *Config)
 
 func NewConfig(opts ...Option) *Config {
 	config := &Config{
-		Address:  "0.0.0.0:8080",
-		LogLevel: 3,
-		LogPath:  "logs/",
+		Address: "0.0.0.0:8080",
+		LogPath: "logs/",
 	}
 
 	for _, o := range opts {
@@ -35,9 +34,9 @@ func Address(ip string) Option {
 	}
 }
 
-func LogLevel(level int) Option {
+func ParseMultiForm(b bool) Option {
 	return func(config *Config) {
-		config.LogLevel = level
+		config.ParseMultiForm = b
 	}
 }
 
