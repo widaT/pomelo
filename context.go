@@ -13,13 +13,22 @@ import (
 var PARAM_NOT_FOUND = errors.New("param not found")
 
 type Context struct {
-	Request *http.Request
+	Request        *http.Request
+	startTime      time.Time
+	params         map[string]string
+	kv             map[string]interface{}
+	server         *Server
+	size           int
+	statusCode     int
+	responseWriter http.ResponseWriter
+}
 
-	startTime time.Time
-	params    map[string]string
-	kv        map[string]interface{}
-	server    *Server
-	http.ResponseWriter
+func (ctx *Context) GetSize() int {
+	return ctx.size
+}
+
+func (ctx *Context) GetHttpStatus() int {
+	return ctx.statusCode
 }
 
 func (ctx *Context) ParamGetInt(key string) (int, error) {
@@ -71,43 +80,44 @@ func (ctx *Context) GetKv(key string) interface{} {
 func (ctx *Context) JSON(content interface{}) {
 	ctx.ContentType("application/json")
 	b, _ := json.Marshal(content)
-	ctx.Write(b)
+	ctx.Write(http.StatusOK, b)
+}
+
+func (ctx *Context) Write(statusCode int, body []byte) {
+	ctx.statusCode = statusCode
+	ctx.responseWriter.WriteHeader(statusCode)
+	if len(body) > 0 {
+		ctx.size, _ = ctx.responseWriter.Write(body)
+	}
 }
 
 func (ctx *Context) STR(content string) {
-	ctx.ResponseWriter.Write(Str2byte(content))
+	ctx.Write(http.StatusOK, Str2byte(content))
 }
 
 func (ctx *Context) BYTE(content []byte) {
-	ctx.ResponseWriter.Write(content)
-}
-
-func (ctx *Context) Abort(status int, body string) {
-	ctx.ResponseWriter.WriteHeader(status)
-	ctx.ResponseWriter.Write(Str2byte(body))
+	ctx.Write(http.StatusOK, content)
 }
 
 func (ctx *Context) Redirect(status int, url string) {
-	ctx.ResponseWriter.Header().Set("Location", url)
-	ctx.ResponseWriter.WriteHeader(status)
-	ctx.ResponseWriter.Write(Str2byte("Redirecting to: " + url))
+	ctx.responseWriter.Header().Set("Location", url)
+	ctx.Write(status, Str2byte("Redirecting to: "+url))
 }
 
 func (ctx *Context) NotModified() {
-	ctx.ResponseWriter.WriteHeader(304)
+	ctx.Write(http.StatusNotModified, nil)
 }
 
 func (ctx *Context) NotFound(message string) {
-	ctx.ResponseWriter.WriteHeader(404)
-	ctx.ResponseWriter.Write(Str2byte(message))
+	ctx.Write(http.StatusNotFound, Str2byte(message))
 }
 
 func (ctx *Context) Unauthorized() {
-	ctx.ResponseWriter.WriteHeader(401)
+	ctx.Write(http.StatusUnauthorized, nil)
 }
 
 func (ctx *Context) Forbidden() {
-	ctx.ResponseWriter.WriteHeader(403)
+	ctx.Write(http.StatusForbidden, nil)
 }
 
 func (ctx *Context) ContentType(val string) string {
@@ -121,15 +131,15 @@ func (ctx *Context) ContentType(val string) string {
 		ctype = mime.TypeByExtension(val)
 	}
 	if ctype != "" {
-		ctx.Header().Set("Content-Type", ctype)
+		ctx.responseWriter.Header().Set("Content-Type", ctype)
 	}
 	return ctype
 }
 
 func (ctx *Context) SetHeader(hdr string, val string, unique bool) {
 	if unique {
-		ctx.Header().Set(hdr, val)
+		ctx.responseWriter.Header().Set(hdr, val)
 	} else {
-		ctx.Header().Add(hdr, val)
+		ctx.responseWriter.Header().Add(hdr, val)
 	}
 }

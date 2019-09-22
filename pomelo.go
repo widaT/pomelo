@@ -10,14 +10,24 @@ import (
 )
 
 type Server struct {
-	conf *Config
-	r    *Router
+	conf      *Config
+	r         *Router
+	errLogger Elogger
 }
 
 func NewServer() *Server {
-	return &Server{
-		r: NewRouter(),
-	}
+	s := &Server{}
+	s.init()
+	s.r = NewRouter(s)
+	s.errLogger = NewErrLogger(s.conf.ErrLog)
+	return s
+}
+
+//with accesslog middleware
+func Default() *Server {
+	s := NewServer()
+	s.Use(AccessLog)
+	return s
 }
 
 func (s *Server) Router() *Router {
@@ -28,11 +38,11 @@ func (s *Server) Use(m Middleware) {
 	s.r.Use(m)
 }
 
-func (s *Server) Add(path string, h Handler) {
+func (s *Server) Add(path string, h interface{}) {
 	s.r.Add(path, h)
 }
 
-func (s *Server) Init() {
+func (s *Server) init() {
 	app := cli.NewApp()
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -51,12 +61,19 @@ func (s *Server) Init() {
 			Usage:  "parse multipart form",
 			EnvVar: "POMELO_MULTI_FORM",
 		},
+		cli.StringFlag{
+			Name:   "elog",
+			Value:  "",
+			Usage:  "err log path",
+			EnvVar: "POMELO_ERRLOG_PATH",
+		},
 	}
 	app.Action = func(ctx *cli.Context) error {
 		s.conf = NewConfig(
 			Address(ctx.String("address")),
 			EnableGzip(ctx.Bool("gzip")),
 			ParseMultiForm(ctx.Bool("multiform")),
+			ELog(ctx.String("elog")),
 		)
 		return nil
 	}
@@ -69,7 +86,7 @@ func (s *Server) ServeHTTP(c http.ResponseWriter, req *http.Request) {
 		Request:        req,
 		startTime:      time.Now(),
 		server:         s,
-		ResponseWriter: c,
+		responseWriter: c,
 		params:         make(map[string]string),
 		kv:             make(map[string]interface{}),
 	}
@@ -100,10 +117,12 @@ func (s *Server) ServeHTTP(c http.ResponseWriter, req *http.Request) {
 func (s *Server) Run() {
 	l, err := net.Listen("tcp", s.conf.Address)
 	if err != nil {
+		s.errLogger.Error("server listen err %#v", err)
 		log.Fatal(err)
 	}
 	err = http.Serve(l, s)
 	if err != nil {
+		s.errLogger.Error("http Serve err %#v", err)
 		log.Fatal(err)
 	}
 }
