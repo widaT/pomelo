@@ -1,22 +1,20 @@
 package pomelo
 
 type Config struct {
-	EnableGizp bool
-	Address    string
-
-	LogLevel int
-	LogPath  string
+	EnableGizp     bool
+	Address        string
+	ParseMultiForm bool
+	ErrLog         string
+	AccLog         string
 }
 
 type Option func(config *Config)
 
 func NewConfig(opts ...Option) *Config {
 	config := &Config{
-		Address:  "0.0.0.0:8080",
-		LogLevel: 3,
-		LogPath:  "logs/",
+		Address: "0.0.0.0:8080",
+		//	ErrLog: "logs/err.log",
 	}
-
 	for _, o := range opts {
 		o(config)
 	}
@@ -35,14 +33,20 @@ func Address(ip string) Option {
 	}
 }
 
-func LogLevel(level int) Option {
+func ParseMultiForm(b bool) Option {
 	return func(config *Config) {
-		config.LogLevel = level
+		config.ParseMultiForm = b
 	}
 }
 
-func LogPath(path string) Option {
+func ELog(path string) Option {
 	return func(config *Config) {
-		config.LogPath = path
+		config.ErrLog = path
+	}
+}
+
+func ALog(path string) Option {
+	return func(config *Config) {
+		config.AccLog = path
 	}
 }

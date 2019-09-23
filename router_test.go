@@ -3,7 +3,6 @@ package pomelo
 import (
 	"fmt"
 	"net/http"
-	"testing"
 	"time"
 )
 
@@ -25,19 +24,4 @@ func timeMiddleware(next http.Handler) http.Handler {
 		//logger.Println(timeElapsed)
 		fmt.Println(timeElapsed)
 	})
-}
-
-func TestMiddleware(t *testing.T) {
-	/*	r := NewRouter()
-
-		r.Use(timeMiddleware)
-		r.Add("/", http.HandlerFunc(hello))
-
-		fmt.Println(r)*/
-
-	s := NewServer()
-	s.Init()
-	s.r.Use(timeMiddleware)
-	s.r.Add("/", http.HandlerFunc(hello))
-	s.Run()
 }
