@@ -74,7 +74,6 @@ func (ctx *Context) ParamGetWithDefault(key, defaultVal string) string {
 
 func (ctx *Context) AddKv(key string, v interface{}) {
 	ctx.kv[key] = v
-
 }
 
 func (ctx *Context) GetKv(key string) interface{} {
