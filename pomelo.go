@@ -30,9 +30,9 @@ type Server struct {
 func NewServer(opts ...Option) *Server {
 	s := &Server{}
 	s.initConfig()
+
 	s.r = NewRouter(s)
 	s.errLogger = NewErrLogger(s.conf)
-
 	for _, o := range opts {
 		o(s)
 	}
@@ -156,7 +156,10 @@ func (s *Server) initConfig() {
 			EnvVar: "POMELO_LOG_MAXSIZE",
 		},
 	}
+
+	var maybeHelp = true
 	app.Action = func(ctx *cli.Context) error {
+		maybeHelp = false
 		s.Option(
 			Address(ctx.String("address")),
 			EnableGzip(ctx.Bool("gzip")),
@@ -168,7 +171,14 @@ func (s *Server) initConfig() {
 		)
 		return nil
 	}
-	app.Run(os.Args)
+
+	if err := app.Run(os.Args); err != nil {
+		log.Fatal(err)
+	}
+
+	if maybeHelp {
+		os.Exit(0)
+	}
 }
 
 func (s *Server) ServeHTTP(c http.ResponseWriter, req *http.Request) {

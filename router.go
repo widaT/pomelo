@@ -50,15 +50,14 @@ func (r *Router) Add(path string, h interface{}) {
 func (r *Router) Run(path string, ctx *Context) {
 	defer func() {
 		if err := recover(); err != nil {
-			r.server.errLogger.Log("Handler crashed with error %#v", err)
+			r.server.errLogger.Log("Handler crashed with error %v", err)
 			for i := 1; ; i += 1 {
 				_, file, line, ok := runtime.Caller(i)
 				if !ok {
 					break
 				}
-				r.server.errLogger.Log(file, line)
+				r.server.errLogger.Log("%s:%d", file, line)
 			}
-
 		}
 	}()
 
