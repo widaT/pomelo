@@ -118,15 +118,17 @@ func (s *Server) initConfig() {
 		cli.StringFlag{
 			Name:   "address",
 			Value:  "0.0.0.0:8080",
-			Usage:  "listen ip",
-			EnvVar: "POMELO_LISTEN_IP",
+			Usage:  "listen ip:port",
+			EnvVar: "POMELO_LISTEN",
 		},
-		cli.BoolFlag{
+		cli.StringFlag{
 			Name:   "gzip",
+			Value:  "false",
 			Usage:  "enable gzip",
 			EnvVar: "POMELO_ENABLE_GZIP",
 		},
-		cli.BoolFlag{
+		cli.StringFlag{
+			Value:  "true",
 			Name:   "multiform",
 			Usage:  "parse multipart form",
 			EnvVar: "POMELO_MULTI_FORM",
