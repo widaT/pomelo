@@ -12,25 +12,10 @@ func hello(c *pomelo.Context) {
 		A: 1233,
 		B: "eeee",
 	})
-
-}
-
-func b(c *pomelo.Context) {
-
-	panic("fdfdsf")
-	c.JSON(struct {
-		A int    `json:"a"`
-		B string `json:"b"`
-	}{
-		A: 1233,
-		B: "eeee",
-	})
-
 }
 
 func main() {
 	s := pomelo.Default(pomelo.LogMaxSize(2000), pomelo.ALog("log/ac.log"))
 	s.Add("/", hello)
-	s.Add("/d", b)
 	s.Run()
 }
