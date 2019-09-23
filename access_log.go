@@ -37,7 +37,7 @@ func AccessLog(next Handler) Handler {
 		next.Serve(ctx)
 		timeElapsed := time.Since(startTime)
 		uri := ctx.Request.URL.Path
-		status := ctx.GetHttpStatus()
+		status := ctx.GetStatusCode()
 		size := ctx.GetSize()
 		paramsCopy := url.Values{}
 		if len(ctx.params) > 0 {

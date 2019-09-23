@@ -16,7 +16,7 @@ func hello(c *pomelo.Context) {
 }
 
 func main() {
-	s := pomelo.Default()
+	s := pomelo.Default(pomelo.LogMaxSize(2000), pomelo.ALog("log/ac.log"))
 	s.Add("/", hello)
 	s.Run()
 }

@@ -31,7 +31,7 @@ func (ctx *Context) GetSize() int {
 	return ctx.size
 }
 
-func (ctx *Context) GetHttpStatus() int {
+func (ctx *Context) GetStatusCode() int {
 	return ctx.statusCode
 }
 

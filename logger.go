@@ -6,7 +6,6 @@ import (
 	"os"
 	"path/filepath"
 	"sync"
-	"sync/atomic"
 	"time"
 )
 
@@ -64,7 +63,6 @@ func NewFileLog(fileName string, config *Config) Logger {
 	}
 
 	finfo, _ := fd.Stat()
-
 	os.Chmod(path, 0666)
 	f := &FileLog{
 		f:        fd,
@@ -91,17 +89,17 @@ func (f *FileLog) doRotate() {
 	}
 	os.Chmod(f.FileName, 0666)
 	f.f = fd
-	f.curSize = 0
 }
 
 func (f *FileLog) Log(msg string, err ...interface{}) {
-	msg = fmt.Sprintf(msg, err...)
-	size := len(msg)
-	atomic.AddInt64(&f.curSize, int64(size))
+	m := Str2byte(fmt.Sprintf(msg, err...))
+	size := len(m)
+	f.Lock.Lock()
+	f.curSize += int64(size)
 	if f.curSize > f.maxSize {
-		f.Lock.Lock()
 		f.doRotate()
-		f.Lock.Unlock()
+		f.curSize = int64(size)
 	}
-	f.f.WriteString(msg)
+	f.f.Write(m)
+	f.Lock.Unlock()
 }

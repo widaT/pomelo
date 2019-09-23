@@ -9,25 +9,95 @@ import (
 	"time"
 )
 
+type Option func(s *Server)
+
+type Config struct {
+	EnableGizp     bool
+	Address        string
+	ParseMultiForm bool
+	ErrLog         string
+	AccLog         string
+	LogMaxSize     int64
+	LogMaxFiles    int
+}
+
 type Server struct {
 	conf      *Config
 	r         *Router
 	errLogger Logger
 }
 
-func NewServer() *Server {
+func NewServer(opts ...Option) *Server {
 	s := &Server{}
-	s.init()
+	s.initConfig()
 	s.r = NewRouter(s)
 	s.errLogger = NewErrLogger(s.conf)
+
+	for _, o := range opts {
+		o(s)
+	}
 	return s
 }
 
+func (s *Server) Option(opts ...Option) {
+	s.conf = &Config{
+		Address:        "0.0.0.0:8080",
+		ParseMultiForm: true,
+		LogMaxSize:     1 << 30,
+		LogMaxFiles:    7,
+	}
+	for _, o := range opts {
+		o(s)
+	}
+}
+
 //with accesslog middleware
-func Default() *Server {
-	s := NewServer()
+func Default(opts ...Option) *Server {
+	s := NewServer(opts...)
 	s.Use(AccessLog)
 	return s
+}
+
+func EnableGzip(sw bool) Option {
+	return func(s *Server) {
+		s.conf.EnableGizp = sw
+	}
+}
+
+func Address(ip string) Option {
+	return func(s *Server) {
+		s.conf.Address = ip
+	}
+}
+
+func ParseMultiForm(b bool) Option {
+	return func(s *Server) {
+		s.conf.ParseMultiForm = b
+	}
+}
+
+func ELog(path string) Option {
+	return func(s *Server) {
+		s.conf.ErrLog = path
+	}
+}
+
+func ALog(path string) Option {
+	return func(s *Server) {
+		s.conf.AccLog = path
+	}
+}
+
+func LogMaxSize(size int64) Option {
+	return func(s *Server) {
+		s.conf.LogMaxSize = size
+	}
+}
+
+func LogMaxFiles(num int) Option {
+	return func(s *Server) {
+		s.conf.LogMaxFiles = num
+	}
 }
 
 func (s *Server) Router() *Router {
@@ -42,7 +112,7 @@ func (s *Server) Add(path string, h interface{}) {
 	s.r.Add(path, h)
 }
 
-func (s *Server) init() {
+func (s *Server) initConfig() {
 	app := cli.NewApp()
 	app.Flags = []cli.Flag{
 		cli.StringFlag{
@@ -87,7 +157,7 @@ func (s *Server) init() {
 		},
 	}
 	app.Action = func(ctx *cli.Context) error {
-		s.conf = NewConfig(
+		s.Option(
 			Address(ctx.String("address")),
 			EnableGzip(ctx.Bool("gzip")),
 			ParseMultiForm(ctx.Bool("multiform")),
@@ -98,7 +168,6 @@ func (s *Server) init() {
 		)
 		return nil
 	}
-
 	app.Run(os.Args)
 }
 
