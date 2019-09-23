@@ -38,7 +38,7 @@ func (r *Router) Add(path string, h interface{}) {
 	case Handler:
 		handler = h.(Handler)
 	default:
-		r.server.errLogger.Error("add route %s error", path)
+		r.server.errLogger.Log("add route %s error", path)
 		log.Fatal("add route error")
 	}
 	for i := len(r.chain) - 1; i >= 0; i-- {
@@ -50,13 +50,13 @@ func (r *Router) Add(path string, h interface{}) {
 func (r *Router) Run(path string, ctx *Context) {
 	defer func() {
 		if err := recover(); err != nil {
-			r.server.errLogger.Error("Handler crashed with error %#v", err)
+			r.server.errLogger.Log("Handler crashed with error %#v", err)
 			for i := 1; ; i += 1 {
 				_, file, line, ok := runtime.Caller(i)
 				if !ok {
 					break
 				}
-				r.server.errLogger.Error(file, line)
+				r.server.errLogger.Log(file, line)
 			}
 
 		}
@@ -70,7 +70,7 @@ func (r *Router) Run(path string, ctx *Context) {
 }
 
 func (r *Router) HttpNotFound(ctx *Context) {
-	r.server.errLogger.Error("The requested URL %s was not found", ctx.Request.URL.Path)
+	r.server.errLogger.Log("The requested URL %s was not found", ctx.Request.URL.Path)
 	h := HandlerFunc(NotFound)
 	h.Serve(ctx)
 }

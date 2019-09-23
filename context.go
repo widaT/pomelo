@@ -23,6 +23,10 @@ type Context struct {
 	responseWriter http.ResponseWriter
 }
 
+func (ctx *Context) GetServerConf() *Config {
+	return ctx.server.conf
+}
+
 func (ctx *Context) GetSize() int {
 	return ctx.size
 }
@@ -86,9 +90,11 @@ func (ctx *Context) JSON(content interface{}) {
 func (ctx *Context) Write(statusCode int, body []byte) {
 	ctx.statusCode = statusCode
 	ctx.responseWriter.WriteHeader(statusCode)
+	size := 0
 	if len(body) > 0 {
-		ctx.size, _ = ctx.responseWriter.Write(body)
+		size, _ = ctx.responseWriter.Write(body)
 	}
+	ctx.size += size
 }
 
 func (ctx *Context) STR(content string) {

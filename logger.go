@@ -5,33 +5,52 @@ import (
 	"log"
 	"os"
 	"path/filepath"
+	"sync"
+	"sync/atomic"
 	"time"
 )
 
-type Elogger interface {
-	Error(msg string, err ...interface{})
+type Logger interface {
+	Log(msg string, err ...interface{})
 }
 
 type ErrLog struct {
-	f *os.File
+	f Logger
 }
 
-func PathExists(path string) (bool, error) {
-	_, err := os.Stat(path)
-	if err == nil {
-		return true, nil
+func (e *ErrLog) Log(msg string, err ...interface{}) {
+	msg = fmt.Sprintf(msg, err...)
+	t := time.Now().Format("2006-01-02 15:04:05")
+	msg = t + " [Err] " + msg + "\n"
+	if e.f == nil {
+		os.Stderr.WriteString(msg)
+		return
 	}
-	if os.IsNotExist(err) {
-		return false, nil
-	}
-	return false, err
+	e.f.Log(msg)
 }
 
-func NewErrLogger(filePath string) Elogger {
-	if filePath == "" {
+func NewErrLogger(config *Config) Logger {
+	if config.ErrLog == "" {
 		return &ErrLog{}
 	}
-	path, _ := filepath.Abs(filePath)
+	return &ErrLog{
+		f: NewFileLog(config.ErrLog, config),
+	}
+}
+
+type FileLog struct {
+	f        *os.File
+	maxSize  int64
+	curSize  int64
+	curNum   int
+	FileName string
+	Perm     os.FileMode
+	MaxFiles int
+	Lock     sync.Mutex
+}
+
+func NewFileLog(fileName string, config *Config) Logger {
+	path, _ := filepath.Abs(fileName)
 	dir := filepath.Dir(path)
 	if exists, _ := PathExists(dir); !exists {
 		err := os.MkdirAll(dir, 0777)
@@ -39,19 +58,50 @@ func NewErrLogger(filePath string) Elogger {
 			log.Fatal("create err log path err", err)
 		}
 	}
-	fd, err := os.OpenFile(filePath, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	fd, err := os.OpenFile(path, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
 	if err != nil {
 		log.Fatal("create err log file err", err)
 	}
-	os.Chmod(filePath, 0666)
-	return &ErrLog{f: fd}
+
+	finfo, _ := fd.Stat()
+
+	os.Chmod(path, 0666)
+	f := &FileLog{
+		f:        fd,
+		curSize:  finfo.Size(),
+		Perm:     0666,
+		FileName: path,
+		MaxFiles: config.LogMaxFiles,
+		maxSize:  config.LogMaxSize,
+	}
+	return f
 }
 
-func (e *ErrLog) Error(msg string, err ...interface{}) {
-	if e.f == nil {
-		e.f = os.Stderr
+func (f *FileLog) doRotate() {
+	f.curNum++
+	if f.curNum > f.MaxFiles {
+		f.curNum = 1
 	}
+	newFileName := fmt.Sprintf("%s.%d", f.FileName, f.curNum)
+	f.f.Close()
+	os.Rename(f.FileName, newFileName)
+	fd, err := os.OpenFile(f.FileName, os.O_WRONLY|os.O_APPEND|os.O_CREATE, 0666)
+	if err != nil {
+		log.Fatal("create err log file err", err)
+	}
+	os.Chmod(f.FileName, 0666)
+	f.f = fd
+	f.curSize = 0
+}
+
+func (f *FileLog) Log(msg string, err ...interface{}) {
 	msg = fmt.Sprintf(msg, err...)
-	t := time.Now().Format("2006-01-02 15:04:05")
-	e.f.WriteString(t + " [Err] " + msg + "\n")
+	size := len(msg)
+	atomic.AddInt64(&f.curSize, int64(size))
+	if f.curSize > f.maxSize {
+		f.Lock.Lock()
+		f.doRotate()
+		f.Lock.Unlock()
+	}
+	f.f.WriteString(msg)
 }

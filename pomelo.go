@@ -12,14 +12,14 @@ import (
 type Server struct {
 	conf      *Config
 	r         *Router
-	errLogger Elogger
+	errLogger Logger
 }
 
 func NewServer() *Server {
 	s := &Server{}
 	s.init()
 	s.r = NewRouter(s)
-	s.errLogger = NewErrLogger(s.conf.ErrLog)
+	s.errLogger = NewErrLogger(s.conf)
 	return s
 }
 
@@ -67,6 +67,24 @@ func (s *Server) init() {
 			Usage:  "err log path",
 			EnvVar: "POMELO_ERRLOG_PATH",
 		},
+		cli.StringFlag{
+			Name:   "alog",
+			Value:  "",
+			Usage:  "access log path",
+			EnvVar: "POMELO_ACCESSLOG_PATH",
+		},
+		cli.Int64Flag{
+			Name:   "logmaxfiles",
+			Value:  7,
+			Usage:  "log max files",
+			EnvVar: "POMELO_LOG_FILES",
+		},
+		cli.Int64Flag{
+			Name:   "logmaxsize",
+			Value:  1 << 30,
+			Usage:  "log max size",
+			EnvVar: "POMELO_LOG_MAXSIZE",
+		},
 	}
 	app.Action = func(ctx *cli.Context) error {
 		s.conf = NewConfig(
@@ -74,6 +92,9 @@ func (s *Server) init() {
 			EnableGzip(ctx.Bool("gzip")),
 			ParseMultiForm(ctx.Bool("multiform")),
 			ELog(ctx.String("elog")),
+			ALog(ctx.String("alog")),
+			LogMaxFiles(ctx.Int("logmaxfiles")),
+			LogMaxSize(ctx.Int64("logmaxsize")),
 		)
 		return nil
 	}
@@ -110,19 +131,18 @@ func (s *Server) ServeHTTP(c http.ResponseWriter, req *http.Request) {
 			}
 		}
 	}
-
 	s.r.Run(req.URL.Path, ctx)
 }
 
 func (s *Server) Run() {
 	l, err := net.Listen("tcp", s.conf.Address)
 	if err != nil {
-		s.errLogger.Error("server listen err %#v", err)
+		s.errLogger.Log("server listen err %#v", err)
 		log.Fatal(err)
 	}
 	err = http.Serve(l, s)
 	if err != nil {
-		s.errLogger.Error("http Serve err %#v", err)
+		s.errLogger.Log("http Serve err %#v", err)
 		log.Fatal(err)
 	}
 }

@@ -6,14 +6,18 @@ type Config struct {
 	ParseMultiForm bool
 	ErrLog         string
 	AccLog         string
+	LogMaxSize     int64
+	LogMaxFiles    int
 }
 
 type Option func(config *Config)
 
 func NewConfig(opts ...Option) *Config {
 	config := &Config{
-		Address: "0.0.0.0:8080",
-		//	ErrLog: "logs/err.log",
+		Address:        "0.0.0.0:8080",
+		ParseMultiForm: true,
+		LogMaxSize:     1 << 30,
+		LogMaxFiles:    7,
 	}
 	for _, o := range opts {
 		o(config)
@@ -48,5 +52,17 @@ func ELog(path string) Option {
 func ALog(path string) Option {
 	return func(config *Config) {
 		config.AccLog = path
+	}
+}
+
+func LogMaxSize(size int64) Option {
+	return func(config *Config) {
+		config.LogMaxSize = size
+	}
+}
+
+func LogMaxFiles(num int) Option {
+	return func(config *Config) {
+		config.LogMaxFiles = num
 	}
 }
