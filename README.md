@@ -2,10 +2,19 @@
 
 轻量化go api框架
 
-
-配置accesslog
+## Quick start
 
 ```go
+	func hello(c *pomelo.Context) {
+		c.JSON(struct {
+			A int    `json:"a"`
+			B string `json:"b"`
+		}{
+			A: 1233,
+			B: "dddddd",
+		})
+	}
+
 	s := pomelo.Default()
 	s.Add("/", hello)
 	s.Run()

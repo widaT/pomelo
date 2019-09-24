@@ -96,7 +96,7 @@ func (ctx *Context) Write(statusCode int, body []byte) {
 	ctx.size += size
 }
 
-func (ctx *Context) STR(content string) {
+func (ctx *Context) STRING(content string) {
 	ctx.Write(http.StatusOK, Str2byte(content))
 }
 
