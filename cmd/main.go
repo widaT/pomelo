@@ -10,12 +10,12 @@ func hello(c *pomelo.Context) {
 		B string `json:"b"`
 	}{
 		A: 1233,
-		B: "eeee",
+		B: "dddddd",
 	})
 }
 
 func main() {
-	s := pomelo.Default(pomelo.LogMaxSize(2000), pomelo.ALog("log/ac.log"))
+	s := pomelo.Default()
 	s.Add("/", hello)
 	s.Run()
 }

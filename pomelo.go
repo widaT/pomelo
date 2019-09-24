@@ -51,10 +51,13 @@ func (s *Server) Option(opts ...Option) {
 	}
 }
 
-//with accesslog middleware
+//with accesslog middleware ,maybe wite gzip middleware
 func Default(opts ...Option) *Server {
 	s := NewServer(opts...)
 	s.Use(AccessLog)
+	if s.conf.EnableGizp {
+		s.Use(Gzip)
+	}
 	return s
 }
 
