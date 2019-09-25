@@ -6,7 +6,7 @@ import (
 	"net"
 	"net/http"
 	"os"
-	"time"
+	"sync"
 )
 
 type Option func(s *Server)
@@ -25,10 +25,17 @@ type Server struct {
 	conf      *Config
 	r         *Router
 	errLogger Logger
+	pool      sync.Pool
 }
 
 func NewServer(opts ...Option) *Server {
-	s := &Server{}
+	s := &Server{
+		pool: sync.Pool{
+			New: func() interface{} {
+				return &Context{}
+			},
+		},
+	}
 	s.initConfig()
 
 	s.r = NewRouter(s)
@@ -187,14 +194,11 @@ func (s *Server) initConfig() {
 }
 
 func (s *Server) ServeHTTP(c http.ResponseWriter, req *http.Request) {
-	ctx := &Context{
-		Request:        req,
-		startTime:      time.Now(),
-		server:         s,
-		responseWriter: c,
-		params:         make(map[string]string),
-		kv:             make(map[string]interface{}),
-	}
+	ctx := s.pool.Get().(*Context)
+	ctx.reset()
+	ctx.server = s
+	ctx.Request = req
+	ctx.responseWriter = c
 
 	//copy data from get and post(x-www-form-urlencoded)
 	req.ParseForm()
@@ -216,6 +220,7 @@ func (s *Server) ServeHTTP(c http.ResponseWriter, req *http.Request) {
 		}
 	}
 	s.r.Run(req.URL.Path, ctx)
+	s.pool.Put(ctx)
 }
 
 func (s *Server) Run() {

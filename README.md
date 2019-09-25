@@ -3,8 +3,13 @@
 轻量化go api框架
 
 ## Quick start
-
 ```go
+	package main
+	
+	import (
+		"github.com/widaT/pomelo"
+	)
+
 	func hello(c *pomelo.Context) {
 		c.JSON(struct {
 			A int    `json:"a"`

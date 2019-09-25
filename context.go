@@ -23,6 +23,13 @@ type Context struct {
 	responseWriter http.ResponseWriter
 }
 
+func (ctx *Context) reset() {
+	ctx.size, ctx.statusCode = 0, 0
+	ctx.params = make(map[string]string)
+	ctx.kv = make(map[string]interface{})
+	ctx.startTime = time.Now()
+}
+
 func (ctx *Context) GetServerConf() *Config {
 	return ctx.server.conf
 }
