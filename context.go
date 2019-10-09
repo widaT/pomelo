@@ -42,18 +42,18 @@ func (ctx *Context) GetStatusCode() int {
 	return ctx.statusCode
 }
 
-func (ctx *Context) ParamGetInt(key string) (int, error) {
+func (ctx *Context) GetStime() time.Time {
+	return ctx.startTime
+}
+
+func (ctx *Context) ParamInt(key string) (int, error) {
 	if ret, found := ctx.params[key]; found {
 		return strconv.Atoi(ret)
 	}
 	return 0, PARAM_NOT_FOUND
 }
 
-func (ctx *Context) GetStime() time.Time {
-	return ctx.startTime
-}
-
-func (ctx *Context) ParamGetIntWithDefault(key string, defalutVal int) int {
+func (ctx *Context) ParamIntWithDefault(key string, defalutVal int) int {
 	if ret, found := ctx.params[key]; found {
 		n, err := strconv.Atoi(ret)
 		if err != nil {
@@ -64,15 +64,15 @@ func (ctx *Context) ParamGetIntWithDefault(key string, defalutVal int) int {
 	return defalutVal
 }
 
-func (ctx *Context) GetParams() map[string]string {
+func (ctx *Context) Params() map[string]string {
 	return ctx.params
 }
 
-func (ctx *Context) ParamGet(key string) string {
+func (ctx *Context) Param(key string) string {
 	return ctx.params[key]
 }
 
-func (ctx *Context) ParamGetWithDefault(key, defaultVal string) string {
+func (ctx *Context) ParamWithDefault(key, defaultVal string) string {
 	if value, found := ctx.params[key]; found {
 		return value
 	}

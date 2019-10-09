@@ -41,7 +41,7 @@ func AccessLog(next Handler) Handler {
 		size := ctx.GetSize()
 		paramsCopy := url.Values{}
 		if len(ctx.params) > 0 {
-			for key, param := range ctx.GetParams() {
+			for key, param := range ctx.Params() {
 				if len(param) > 500 {
 					paramsCopy.Set(key, "-5h-") //param value size bigger than 500  then hidden
 					continue

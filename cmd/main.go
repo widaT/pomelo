@@ -26,7 +26,7 @@ func hellogroup(c *pomelo.Context) {
 
 func Test(next pomelo.Handler) pomelo.Handler {
 	return pomelo.HandlerFunc(func(ctx *pomelo.Context) {
-		if ctx.ParamGet("a") != "b" {
+		if ctx.Param("a") != "b" {
 			ctx.JSON(struct {
 				A int    `json:"a"`
 				B string `json:"b"`
@@ -50,5 +50,7 @@ func main() {
 	group.Add("/abc", hellogroup)
 
 	group.Add("/cdb", hellogroup)
+
+	s.Add("/dddd", hello)
 	s.Run()
 }
