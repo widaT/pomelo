@@ -114,6 +114,13 @@ func (s *Server) Router() *Router {
 	return s.r
 }
 
+func (s *Server) Group(basePath string) *RouterGroup {
+	return &RouterGroup{
+		r:        s.r,
+		basePath: basePath,
+	}
+}
+
 func (s *Server) Use(m Middleware) {
 	s.r.Use(m)
 }

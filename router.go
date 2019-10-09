@@ -77,3 +77,33 @@ func (r *Router) HttpNotFound(ctx *Context) {
 func (r *Router) Use(m ...Middleware) {
 	r.chain = append(r.chain, m...)
 }
+
+type RouterGroup struct {
+	r        *Router
+	basePath string
+	chain    []Middleware
+}
+
+func (rg *RouterGroup) Add(path string, h interface{}) {
+	var handler Handler
+	switch h.(type) {
+	case func(*Context):
+		handler = HandlerFunc(h.(func(*Context)))
+	case Handler:
+		handler = h.(Handler)
+	default:
+		rg.r.server.errLogger.Log("add route %s error", path)
+		log.Fatal("add route error")
+	}
+	var chains []Middleware
+	chains = append(rg.r.chain, rg.chain...)
+	for i := len(chains) - 1; i >= 0; i-- {
+		handler = chains[i](handler)
+	}
+	path = rg.basePath + path
+	rg.r.mux[path] = handler
+}
+
+func (rg *RouterGroup) Use(m ...Middleware) {
+	rg.chain = append(rg.chain, m...)
+}
